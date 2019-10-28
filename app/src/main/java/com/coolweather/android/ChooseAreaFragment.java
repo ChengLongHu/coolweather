@@ -100,7 +100,12 @@ public class ChooseAreaFragment extends Fragment {
                     selectedCity = cityList.get(position);
                     queryCounties();
                 }else if(currentLevel == LEVEL_COUNTY){
-                    Toast.makeText(getContext(),countyList.get(position).getContyName(),Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(),countyList.get(position).getContyName() + countyList.get(position).getId(),Toast.LENGTH_SHORT).show();
+//                    String weatherId = countyList.get(position).getWeatherId();
+//                    Intent intent = new Intent(getActivity(),WeatherActivity.class);
+//                    intent.putExtra("weather",weatherId);
+//                    startActivity(intent);
+//                    getActivity().finish();
                 }
             }
         });
