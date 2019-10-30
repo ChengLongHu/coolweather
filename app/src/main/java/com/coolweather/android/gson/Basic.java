@@ -9,7 +9,7 @@ import com.google.gson.annotations.SerializedName;
 public class Basic {
 
     //城市
-    @SerializedName("parent_city")
+    @SerializedName("location")
     public String cityName;
 
     //城市id

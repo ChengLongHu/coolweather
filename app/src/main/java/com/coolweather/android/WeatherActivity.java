@@ -1,5 +1,6 @@
 package com.coolweather.android;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -7,10 +8,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -22,6 +27,7 @@ import com.coolweather.android.gson.Weather;
 import com.coolweather.android.gson.aqi.Aqi;
 import com.coolweather.android.gson.forecast.Forecast;
 import com.coolweather.android.gson.suggestion.Suggestions;
+import com.coolweather.android.service.AutoUpdateService;
 import com.coolweather.android.util.HttpUtil;
 import com.coolweather.android.util.Utility;
 
@@ -34,6 +40,10 @@ import okhttp3.Response;
 
 public class WeatherActivity extends AppCompatActivity {
 
+    public DrawerLayout drawerLayout;
+    private Button navButton;
+    //下拉刷新
+    public SwipeRefreshLayout swipeRefresh;
     private static final String TAG = "WeatherActivity";
     //各个组件对象引用
     private ScrollView weatherLayout;
@@ -70,18 +80,22 @@ public class WeatherActivity extends AppCompatActivity {
                 //天气操作
                 case UPDATE_WEATHER:
                     showWeatherInfo();
+                    swipeRefresh.setRefreshing(false);
                     break;
                 //建议操作
                 case UPDATE_SUGGESTION:
                     showSuggestion();
+                    swipeRefresh.setRefreshing(false);
                     break;
                 //天气预报
                 case UPDATE_FORECAST:
                     showForecast();
+                    swipeRefresh.setRefreshing(false);
                     break;
                 //AQI
                 case UPDATE_AQI:
                     showAqi();
+                    swipeRefresh.setRefreshing(false);
                     break;
             }
         }
@@ -112,23 +126,34 @@ public class WeatherActivity extends AppCompatActivity {
         comfortText = (TextView)findViewById(R.id.comfort_text);
         carWashText = (TextView)findViewById(R.id.car_wash_text);
         sportText = (TextView)findViewById(R.id.sport_text);
+        swipeRefresh = (SwipeRefreshLayout)findViewById(R.id.swipe_refresh);
+        swipeRefresh.setColorSchemeResources(R.color.colorPrimary);
+        drawerLayout = (DrawerLayout) findViewById(R.id.draw_layout);
+        navButton = (Button)findViewById(R.id.nav_button);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString = prefs.getString("weather",null);
+        final String weatherId;
         if(weatherString != null && weather != null){
             //有缓存直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
+            weatherId = weather.basic.weatherId;
             Log.d("WeatherActivity", "数据库查的天气" + weather.toString());
             showWeatherInfo();
         } else {
             //无缓存时去服务器查询天气
-            String weatherId = getIntent().getStringExtra("weather_id");
+            weatherId = getIntent().getStringExtra("weather_id");
             Log.d("WeatherActivity", "网络查的天气 " + weatherId);
             weatherLayout.setVisibility(View.INVISIBLE);
-            requestWeather(weatherId);
-            requestSuggestion(weatherId);
-            requestForecast(weatherId);
-            requestAqi(weatherId);
+            requestData(weatherId);
         }
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                Toast.makeText(WeatherActivity.this,"刷新成功",Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "我被刷新了" + weatherId);
+                requestData(weatherId);
+            }
+        });
         //加载图片
         String bingPic = prefs.getString("bing_pic",null);
         if(bingPic != null){
@@ -136,7 +161,21 @@ public class WeatherActivity extends AppCompatActivity {
         }else{
             loadBingPic();
         }
+        navButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
 
+    }
+
+    public void requestData(String weatherId){
+        Log.d(TAG, "---------" + weatherId + "--------------");
+        requestWeather(weatherId);
+        requestSuggestion(weatherId);
+        requestForecast(weatherId);
+        requestAqi(weatherId);
     }
     /**
      * 根据天气id请求城市天气信息
@@ -282,6 +321,8 @@ public class WeatherActivity extends AppCompatActivity {
         titleUpdateTime.setText(updateTime);
         degreeText.setText(degree);
         weatherInfoText.setText(weatherInfo);
+        Intent intent = new Intent(this, AutoUpdateService.class);
+        startService(intent);
 
     }
     /**
