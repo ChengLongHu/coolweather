@@ -7,14 +7,11 @@ import com.google.gson.annotations.SerializedName;
  */
 
 public class Now {
+    //温度
     @SerializedName("tmp")
     public String temperature;
 
-    @SerializedName("cond")
-    public More more;
-
-    public class More{
-        @SerializedName("txt")
-        public String info;
-    }
+    //天气
+    @SerializedName("cond_txt")
+    public String Condition;
 }
